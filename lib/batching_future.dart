@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'dart:collection';
 
+import 'package:quiver/collection.dart';
 import 'package:quiver/iterables.dart';
 import 'package:synchronized/synchronized.dart';
 
@@ -30,15 +31,23 @@ abstract class BatchingFutureProvider<K, V> {
 ///
 /// Warning: If [maxWaitDuration] is not supplied, then it is possible that
 /// a partial batch will never finish computing.
+///
+/// If [cacheSize] is specified, then the provider is backed by a cache of
+/// the specified size, which immediately resolves computations, rather than
+/// passing to the batching computer.
 BatchingFutureProvider<K, V> createBatcher<K, V>(BatchComputer<K, V> computer,
-    {int maxBatchSize, Duration maxWaitDuration}) {
+    {int maxBatchSize, Duration maxWaitDuration, int cacheSize}) {
   if (!((maxBatchSize != null || maxWaitDuration != null) &&
       (maxWaitDuration == null || maxWaitDuration.inMilliseconds > 0) &&
       (maxBatchSize == null || maxBatchSize > 0))) {
     throw ArgumentError(
         "At least one of {maxBatchSize, maxWaitDuration} must be specified and be positive values");
   }
-  return _Impl(computer, maxBatchSize, maxWaitDuration);
+  final provider = _Impl<K, V>(computer, maxBatchSize, maxWaitDuration);
+  if (cacheSize == null) {
+    return provider;
+  }
+  return _CachingBatchingFuture(provider: provider, maximumSize: cacheSize);
 }
 
 // Holds the input value and the future to complete it.
@@ -134,5 +143,28 @@ class _Impl<K, V> implements BatchingFutureProvider<K, V> {
 
   void triggerTimer() {
     listen(_ExecuteCommand.EXECUTE);
+  }
+}
+
+/// A BatchingFutureProvider backed by a cache.
+///
+/// Requests are either immediately satisfied when a cache hit succeeds,
+/// or proxied through the child [provider] otherwise.
+class _CachingBatchingFuture<K, V> implements BatchingFutureProvider<K, V> {
+  final LruMap<K, V> _cache;
+  final BatchingFutureProvider<K, V> _provider;
+
+  _CachingBatchingFuture(
+      {BatchingFutureProvider<K, V> provider, int maximumSize = 200})
+      : _cache = LruMap(maximumSize: maximumSize),
+        _provider = provider;
+  @override
+  Future<V> submit(K inputValue) async {
+    if (_cache.containsKey(inputValue)) {
+      return Future.value(_cache[inputValue]);
+    }
+    final result = await _provider.submit(inputValue);
+    _cache[inputValue] = result;
+    return result;
   }
 }
