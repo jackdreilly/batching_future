@@ -6,8 +6,9 @@ author: Jack Reilly <jackdreilly@gmail.com>
 homepage: https://github.com/jackdreilly/batching_future
 documentation: https://github.com/jackdreilly/batching_future
 environment:
+  sdk: '>=2.0.0 <3.0.0'
 dependencies:
-  quiver:
-  synchronized:
+  quiver: ^2.0.5
+  synchronized: ^2.1.0+1
 dev_dependencies:
   test:
