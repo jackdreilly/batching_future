@@ -1,18 +1,14 @@
-import 'package:test/test.dart';
 import 'package:batching_future/batching_future.dart';
+import 'package:test/test.dart';
 
-class Doubler implements BatchComputer<int, int> {
-  @override
-  Future<List<int>> compute(List<int> batchedInputs) {
-    return Future.value(batchedInputs.map((i) => i * 2).toList());
-  }
-}
+Future<List<int>> timesTwo(List<int> inputs) async =>
+    inputs.map((i) => i * 2).toList();
 
 void main() {
   test('Should trigger after timeout', () async {
     final maxDuration = Duration(milliseconds: 200);
     final batchSize = 3;
-    final doubler = createBatcher(Doubler(),
+    final doubler = createBatcher(timesTwo,
         maxWaitDuration: maxDuration, maxBatchSize: batchSize);
     final start = DateTime.now();
     final eightF = doubler.submit(4);
@@ -31,7 +27,7 @@ void main() {
   test('Should compute many batches', () async {
     final maxDuration = Duration(milliseconds: 200);
     final batchSize = 3;
-    final doubler = createBatcher(Doubler(),
+    final doubler = createBatcher(timesTwo,
         maxWaitDuration: maxDuration, maxBatchSize: batchSize);
     final start = DateTime.now();
     final results =
@@ -43,7 +39,7 @@ void main() {
   test('Should compute many batches no wait', () async {
     final maxDuration = Duration(milliseconds: 200);
     final batchSize = 3;
-    final doubler = createBatcher(Doubler(),
+    final doubler = createBatcher(timesTwo,
         maxWaitDuration: maxDuration, maxBatchSize: batchSize);
     final start = DateTime.now();
     final results =
@@ -54,7 +50,7 @@ void main() {
   });
   test('Batch should never compute', () async {
     final batchSize = 3;
-    final doubler = createBatcher(Doubler(), maxBatchSize: batchSize);
+    final doubler = createBatcher(timesTwo, maxBatchSize: batchSize);
     final futures = Iterable.generate(2).map((i) => doubler
         .submit(i)
         .timeout(Duration(milliseconds: 100), onTimeout: () => -1));
@@ -65,7 +61,7 @@ void main() {
   });
   test('Batch computes without timeout', () async {
     final batchSize = 3;
-    final doubler = createBatcher(Doubler(), maxBatchSize: batchSize);
+    final doubler = createBatcher(timesTwo, maxBatchSize: batchSize);
     final futures = Iterable.generate(3).map((i) => doubler
         .submit(i)
         .timeout(Duration(milliseconds: 100), onTimeout: () => -1));
@@ -74,18 +70,17 @@ void main() {
   });
   test('Batch computes without maxBatch', () async {
     final maxDuration = Duration(milliseconds: 50);
-    final doubler = createBatcher(Doubler(), maxWaitDuration: maxDuration);
+    final doubler = createBatcher(timesTwo, maxWaitDuration: maxDuration);
     final futures = Iterable.generate(3).map((i) => doubler.submit(i));
     final results = await Future.wait(futures);
     expect(results, equals(Iterable.generate(3).map((i) => i * 2).toList()));
   });
   test('Check asserts', () {
-    expect(() => createBatcher(Doubler()), throwsArgumentError);
+    expect(() => createBatcher(timesTwo), throwsArgumentError);
     expect(
-        () => createBatcher(Doubler(),
+        () => createBatcher(timesTwo,
             maxWaitDuration: Duration(milliseconds: -1)),
         throwsArgumentError);
-    expect(
-        () => createBatcher(Doubler(), maxBatchSize: 0), throwsArgumentError);
+    expect(() => createBatcher(timesTwo, maxBatchSize: 0), throwsArgumentError);
   });
 }

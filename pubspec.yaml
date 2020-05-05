@@ -1,12 +1,12 @@
 name: batching_future
-version: 0.0.3
+version: 1.0.0
 description: >-
   Batches multiple requests into a single batch requests which triggers once the maximum wait time or the maximum batch size is reached.
 author: Jack Reilly <jackdreilly@gmail.com>
 homepage: https://github.com/jackdreilly/batching_future
 documentation: https://github.com/jackdreilly/batching_future
 environment:
-  sdk: '>=2.0.0 <3.0.0'
+  sdk: ">=2.7.0 <3.0.0"
 dependencies:
   quiver: ^2.0.5
   synchronized: ^2.1.0+1

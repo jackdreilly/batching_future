@@ -1,3 +1,7 @@
+## 1.0.0
+
+- Switch single-method interface to a function typedef
+
 ## 0.0.3
 
 - Adds caching option

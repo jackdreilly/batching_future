@@ -2,7 +2,6 @@
 /// a max batch size or max wait duration is reached.
 ///
 import 'dart:async';
-
 import 'dart:collection';
 
 import 'package:quiver/collection.dart';
@@ -12,10 +11,7 @@ import 'package:synchronized/synchronized.dart';
 /// Converts input type [K] to output type [V] for every item in
 /// [batchedInputs]. There must be exactly one item in output list for every
 /// item in input list, and assumes that input[i] => output[i].
-abstract class BatchComputer<K, V> {
-  const BatchComputer();
-  Future<List<V>> compute(List<K> batchedInputs);
-}
+typedef BatchComputer<K, V> = FutureOr<List<V>> Function(List<K> batchedInputs);
 
 /// Interface to submit (possible) batched computation requests.
 abstract class BatchingFutureProvider<K, V> {
@@ -75,7 +71,7 @@ class _Impl<K, V> implements BatchingFutureProvider<K, V> {
   Timer timer;
 
   /// Performs the input->output batch transformation.
-  final BatchComputer computer;
+  final BatchComputer<K, V> computer;
 
   /// See [createBatcher].
   final int maxBatchSize;
@@ -134,7 +130,7 @@ class _Impl<K, V> implements BatchingFutureProvider<K, V> {
     if (queue.isEmpty) {
       return;
     }
-    final results = await computer.compute(List<K>.of(queue.map((p) => p.k)));
+    final results = await computer(List<K>.of(queue.map((p) => p.k)));
     for (var pair in zip<Object>([queue, results])) {
       (pair[0] as _Payload).completer.complete(pair[1] as V);
     }
